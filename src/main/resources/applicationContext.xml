@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans
+		xmlns="http://www.springframework.org/schema/hadoop"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:beans="http://www.springframework.org/schema/beans"
+		xmlns:context="http://www.springframework.org/schema/context"
+		xmlns:hdp="http://www.springframework.org/schema/hadoop"
+		xsi:schemaLocation="
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context
+            http://www.springframework.org/schema/context/spring-context.xsd
+            http://www.springframework.org/schema/hadoop
+            http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+
+	<!-- Setting up .properties file -->
+	<context:property-placeholder location="application.properties"/>
+
+	<!-- Parameters passed to Hadoop -->
+	<hdp:configuration>
+		fs.defaultFS=${fs.defaultFS}
+		mapreduce.jobtracker.address=${mapreduce.jobtracker.address}
+		mapreduce.job.queuename=${mapreduce.job.queuename}
+	</hdp:configuration>
+
+	<!-- Job setup -->
+	<hdp:job id="stage1.word.count"
+		input-path="${stage1.input.path}"
+		output-path="${stage1.output.path}"
+		jar-by-class="org.abogdanov.spring_for_hadoop_test.Main"
+		mapper="org.abogdanov.spring_for_hadoop_test.staging.stage1_word_count.MFilterPunctuation"
+		reducer="org.abogdanov.spring_for_hadoop_test.staging.stage1_word_count.RWordCount" />
+
+	<hdp:job id="stage2.words_usage_sum"
+			 input-path="${stage2.input.path}"
+			 output-path="${stage2.output.path}"
+			 jar-by-class="org.abogdanov.spring_for_hadoop_test.Main"
+			 mapper="org.abogdanov.spring_for_hadoop_test.staging.stage2_words_usage_sum.MStg"
+			reducer="org.abogdanov.spring_for_hadoop_test.staging.stage2_words_usage_sum.RWordsUsageSum"/>
+
+	<hdp:streaming id="stage3.line.count"
+				   input-path="${stage3.input.path}"
+				   output-path="${stage3.output.path}"
+				   mapper="${unix.path.cat}"
+				   reducer="${unix.path.wc}" />
+
+	<!-- Job runner -->
+	<hdp:job-runner id="runner"
+				run-at-startup="true"
+				job-ref="stage1.word.count, stage2.words_usage_sum, stage3.line.count"/>
+
+</beans:beans>
